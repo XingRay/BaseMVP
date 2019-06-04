@@ -10,15 +10,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.baidu.mobstat.StatService;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author : leixing
  * @date : 2017-04-20
- * Email       : leixing@baidu.com
+ * Email       : leixing1012@qq.com
  * Version     : 0.0.1
  * <p>
  * Description : xxx
@@ -81,7 +79,6 @@ public abstract class BaseFragment extends Fragment implements LifeCycleProvider
     @Override
     public void onResume() {
         super.onResume();
-        StatService.onPageStart(getContext(), getClass().getSimpleName());
 
         if (mLifeCycleObservers != null) {
             for (LifeCycleObserver observer : mLifeCycleObservers) {
@@ -93,7 +90,6 @@ public abstract class BaseFragment extends Fragment implements LifeCycleProvider
     @Override
     public void onPause() {
         super.onPause();
-        StatService.onPageEnd(getContext(), getClass().getSimpleName());
 
         if (mLifeCycleObservers != null) {
             for (LifeCycleObserver observer : mLifeCycleObservers) {

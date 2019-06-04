@@ -4,7 +4,7 @@ package com.leixing.basemvp;
  * description : xxx
  *
  * @author : leixing
- * email : leixing@baidu.com
+ * email : leixing1012@qq.com
  * @date : 2019/2/22 11:26
  */
 public class Util {

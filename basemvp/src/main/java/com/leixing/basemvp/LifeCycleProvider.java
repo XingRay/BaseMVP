@@ -3,7 +3,7 @@ package com.leixing.basemvp;
 /**
  * @author : leixing
  * @date : 2017-05-31
- * Email       : leixing@baidu.com
+ * Email       : leixing1012@qq.com
  * Version     : 0.0.1
  * <p>
  * Description : 生命周期提供者，一般是{@code Activity} 或者是 {@code Fragment}

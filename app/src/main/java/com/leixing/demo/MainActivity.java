@@ -1,8 +1,11 @@
 package com.leixing.demo;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 
+/**
+ * @author leixing
+ */
 public class MainActivity extends AppCompatActivity {
 
     @Override

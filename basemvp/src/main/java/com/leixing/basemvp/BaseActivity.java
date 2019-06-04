@@ -3,19 +3,9 @@ package com.leixing.basemvp;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
-import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
-
-import com.baidu.media.networkstate.NetStateChangeObserver;
-import com.baidu.media.networkstate.NetStateChangeReceiver;
-import com.baidu.media.ui.util.GuideQueryInstructUtil;
-import com.baidu.media.util.CommonLoadingUtils;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -25,12 +15,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author : leixing
  * @date : 2017-04-14
- * Email       : leixing@baidu.com
+ * Email       : leixing1012@qq.com
  * Version     : 0.0.1
  * <p>
  */
 
-public abstract class BaseActivity extends FragmentActivity implements LifeCycleProvider, NetStateChangeObserver {
+public abstract class BaseActivity extends FragmentActivity implements LifeCycleProvider {
 
     protected Activity mActivity;
     protected Context mContext;
@@ -59,9 +49,6 @@ public abstract class BaseActivity extends FragmentActivity implements LifeCycle
                 observer.onCreate();
             }
         }
-
-        setStatusBarFullTransparent();
-        registerMonitor();
     }
 
 
@@ -94,9 +81,6 @@ public abstract class BaseActivity extends FragmentActivity implements LifeCycle
                 observer.onPause();
             }
         }
-
-        CommonLoadingUtils.hideDialogToast();
-
     }
 
     @Override
@@ -119,7 +103,6 @@ public abstract class BaseActivity extends FragmentActivity implements LifeCycle
             }
             mLifeCycleObservers.clear();
         }
-        unRegisterMonitor();
     }
 
     /**
@@ -171,68 +154,5 @@ public abstract class BaseActivity extends FragmentActivity implements LifeCycle
             return;
         }
         mLifeCycleObservers.remove(observer);
-    }
-
-    public static void setWindowStatusBarColor(Activity activity, int colorResId) {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                Window window = activity.getWindow();
-                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-                window.setStatusBarColor(activity.getResources().getColor(colorResId));
-
-                // 底部导航栏
-                // window.setNavigationBarColor(activity.getResources().getColor(colorResId));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * 全透状态栏
-     */
-    protected void setStatusBarFullTransparent() {
-        if (Build.VERSION.SDK_INT >= 21) { // 21表示5.0
-            Window window = getWindow();
-            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.setStatusBarColor(Color.TRANSPARENT);
-        } else if (Build.VERSION.SDK_INT >= 19) { // 19表示4.4
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            // 虚拟键盘也透明
-            // getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
-        }
-    }
-
-    @Override
-    public void onNetConnected() {
-        //  网络状态改变，切换query数据
-        GuideQueryInstructUtil.loadQueryNoData(this);
-        GuideQueryInstructUtil.processQueryData(this);
-    }
-
-    @Override
-    public void onNetDisconnected() {
-        //  网络状态改变，切换query数据
-        GuideQueryInstructUtil.processQueryData(this);
-    }
-
-
-    /**
-     * 注册相关监听
-     */
-    private void registerMonitor() {
-        NetStateChangeReceiver.registerObserver(this);
-        NetStateChangeReceiver.registerReceiver(this);
-    }
-
-    /**
-     * 解除相关监听
-     */
-    private void unRegisterMonitor() {
-        NetStateChangeReceiver.unregisterObserver(this);
-        NetStateChangeReceiver.unregisterReceiver(this);
     }
 }

@@ -3,7 +3,7 @@ package com.leixing.basemvp;
 /**
  * @author : leixing
  * @date : 2017-05-26
- * Email       : leixing@baidu.com
+ * Email       : leixing1012@qq.com
  * Version     : 0.0.1
  * <p>
  * Description : interface of view life cycle

@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * @author : leixing
  * @date : 2017-04-14
- * Email       : leixing@baidu.com
+ * Email       : leixing1012@qq.com
  * Version     : 0.0.1
  * <p>
  * Description : MVP架构的Presenter的基类，使用JDK的动态代理，代理视图对象的方法调用
@@ -131,23 +131,10 @@ public abstract class BasePresenter<VIEW> {
     }
 
     final protected VIEW getQueuedView(TaskAddStrategy strategy, LifeCycle... lifeCycles) {
-//        if (mProxies == null) {
-//            mProxies = new HashMap<>(1);
-//        }
-//        Map<TaskAddStrategy, VIEW> map = mProxies.get(lifeCycle);
-//        if (map == null) {
-//            map = new HashMap<>(1);
-//            mProxies.put(lifeCycle, map);
-//        }
-//        VIEW viewProxy = map.get(strategy);
         if (mQueuedViewProxy == null) {
             mQueuedViewProxy = createViewProxy(lifeCycles, strategy);
         }
         return mQueuedViewProxy;
-//        if (viewProxy == null) {
-//            viewProxy = createViewProxy(lifeCycles, strategy);
-////            map.put(strategy, viewProxy);
-//        }
     }
 
     private VIEW createViewProxy(final LifeCycle[] lifeCycles, final TaskAddStrategy strategy) {
