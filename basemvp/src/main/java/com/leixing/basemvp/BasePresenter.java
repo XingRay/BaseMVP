@@ -1,10 +1,6 @@
 package com.leixing.basemvp;
 
-import android.app.Activity;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationHandler;
@@ -26,123 +22,48 @@ import java.util.Map;
  */
 
 @SuppressWarnings("unused")
-public abstract class BasePresenter<VIEW> {
-
-    private VIEW mViewProxy;
-    private boolean destroyed = false;
-    private boolean isViewSet = false;
-    private ProxyViewHandler mProxyViewHandler;
-    private Activity activity;
-    private Handler mUIHandler = new Handler(Looper.getMainLooper());
-    private Map<LifeCycle, Map<TaskAddStrategy, VIEW>> mProxies;
-    private Class<?>[] mTargetViewInterfaces;
-    private WeakReference<VIEW> mTargetView;
+public abstract class BasePresenter<View> {
+    private Map<LifeCycle, Map<TaskAddStrategy, View>> mProxies;
+    private Class<?>[] mViewInterfaces;
+    private WeakReference<View> mViewReference;
     private LifeCycle mLifeCycle = LifeCycle.INIT;
     private List<Task> mTasks;
-    private VIEW mQueuedViewProxy;
-
-    /**
-     * 供子类继承是否在页面关闭时清除VIEW引用，
-     * 如果这种情况下,getActivity()在页面关闭后会返回null
-     * 如果页面关闭后，presenter继续执行长任务，会造成页面内存泄露
-     *
-     * @return 是否要一直持有activity的引用
-     */
-    @SuppressWarnings("WeakerAccess")
-    protected boolean keepActivityAlways() {
-        return false;
-    }
-
-    private Activity checkActivity(VIEW target) {
-        Activity activity = null;
-        if (target != null) {
-            if (target instanceof Activity) {
-                activity = (Activity) target;
-            } else if (target instanceof Fragment) {
-                activity = ((Fragment) target).getActivity();
-            } else if (target instanceof android.app.Fragment) {
-                activity = ((android.app.Fragment) target).getActivity();
-            }
-        }
-        return activity;
-    }
-
-    final protected Activity getActivity() {
-        if (activity == null && isViewSet) {
-            VIEW target = mProxyViewHandler.getView();
-            return checkActivity(target);
-        }
-        return activity;
-    }
-
-    /**
-     * 仅当VIEW有效时在主线程运行命令
-     *
-     * @param command 命令
-     */
-    final protected void runOnUiThread(Runnable command) {
-        runOnUiThread(command, true);
-    }
-
-    /**
-     * 在主线程运行命令
-     *
-     * @param command              在主线程执行的命令
-     * @param justRunWhenViewValid 是否仅在视图有效时运行
-     *                             为{@code true}时，当视图销毁后（activity、fragment调用onDestroy），命令将被丢弃
-     *                             为{@code false}时，不论视图是否销毁，都将在UI线程运行命令
-     */
-    @SuppressWarnings("WeakerAccess")
-    final protected void runOnUiThread(Runnable command, @SuppressWarnings("SameParameterValue") boolean justRunWhenViewValid) {
-        if (justRunWhenViewValid && !isViewValid()) {
-            return;
-        }
-        mUIHandler.post(command);
-    }
-
-    /**
-     * 判断VIEW是否有效
-     *
-     * @return 视图是否有效
-     */
-    private boolean isViewValid() {
-        return isViewSet && !destroyed && (mProxyViewHandler != null) && mProxyViewHandler.isViewExists();
-    }
+    private View mViewProxy;
 
     /**
      * 获取视图对象
      *
      * @return 代理的视图对象
      */
-    final protected VIEW getView() {
+    final protected View getView() {
+        return runOnLifeCycles(TaskAddStrategy.INSERT_TAIL, LifeCycle.values());
+    }
+
+    final protected View runLastOnResume() {
+        return runOnLifeCycles(TaskAddStrategy.OVERRIDE, LifeCycle.RESUME);
+    }
+
+    final protected View runOnceOnResume() {
+        return runOnLifeCycles(TaskAddStrategy.ADD_IF_NOT_EXIST, LifeCycle.RESUME);
+    }
+
+    final protected View runOnResume() {
+        return runOnLifeCycles(TaskAddStrategy.INSERT_TAIL, LifeCycle.RESUME);
+    }
+
+    final protected View runOnLifeCycles(TaskAddStrategy strategy, LifeCycle... lifeCycles) {
+        if (mViewProxy == null) {
+            mViewProxy = createViewProxy(lifeCycles, strategy);
+        }
         return mViewProxy;
     }
 
-    final protected VIEW getQueuedViewRunLast() {
-        return getQueuedView(TaskAddStrategy.OVERRIDE, LifeCycle.RESUME);
-    }
-
-    final protected VIEW getQueuedViewRunOnce() {
-        return getQueuedView(TaskAddStrategy.ADD_IF_NOT_EXIST, LifeCycle.RESUME);
-    }
-
-    final protected VIEW getQueuedView() {
-        return getQueuedView(TaskAddStrategy.INSERT_TAIL, LifeCycle.RESUME);
-    }
-
-    final protected VIEW getQueuedView(TaskAddStrategy strategy, LifeCycle... lifeCycles) {
-        if (mQueuedViewProxy == null) {
-            mQueuedViewProxy = createViewProxy(lifeCycles, strategy);
-        }
-        return mQueuedViewProxy;
-    }
-
-    private VIEW createViewProxy(final LifeCycle[] lifeCycles, final TaskAddStrategy strategy) {
+    private View createViewProxy(final LifeCycle[] lifeCycles, final TaskAddStrategy strategy) {
         // noinspection unchecked
-        return (VIEW) Proxy.newProxyInstance(this.getClass().getClassLoader(), mTargetViewInterfaces, new InvocationHandler() {
+        return (View) Proxy.newProxyInstance(getClass().getClassLoader(), mViewInterfaces, new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, final Method method, final Object[] args) throws Throwable {
-                final VIEW targetView = mTargetView.get();
+                final View targetView = mViewReference.get();
                 if (targetView == null) {
                     return null;
                 }
@@ -154,7 +75,7 @@ public abstract class BasePresenter<VIEW> {
                 Task task = new Task(id, lifeCycles) {
                     @Override
                     public void run() {
-                        final VIEW targetView = mTargetView.get();
+                        final View targetView = mViewReference.get();
                         if (targetView == null) {
                             return;
                         }
@@ -177,26 +98,13 @@ public abstract class BasePresenter<VIEW> {
         });
     }
 
-    /**
-     * 设置被代理的视图对象
-     * 注意：当页面关闭时会自动清除该VIEW的引用,
-     * 如果没有设置  {@link #keepActivityAlways()} 为true, 会造成getActivity()==null
-     *
-     * @param view 被代理的视图对象
-     */
-    @SuppressWarnings("unchecked")
-    public void setView(@NonNull VIEW view) {
-        isViewSet = true;
-        mTargetViewInterfaces = view.getClass().getInterfaces();
-        if (keepActivityAlways()) {
-            activity = checkActivity(view);
-        }
+    public void setView(@NonNull View view) {
+        mViewInterfaces = view.getClass().getInterfaces();
+        mViewReference = new WeakReference<>(view);
+
         if (view instanceof LifeCycleProvider) {
             addLifeCycleObserver((LifeCycleProvider) view);
         }
-        mProxyViewHandler = new ProxyViewHandler(view);
-        mTargetView = new WeakReference<>(view);
-        mViewProxy = (VIEW) Proxy.newProxyInstance(this.getClass().getClassLoader(), view.getClass().getInterfaces(), mProxyViewHandler);
     }
 
     private void addLifeCycleObserver(final LifeCycleProvider lifeCycleProvider) {
@@ -235,10 +143,6 @@ public abstract class BasePresenter<VIEW> {
             public void onDestroy() {
                 mLifeCycle = LifeCycle.DESTROY;
                 executeTasks();
-                destroyed = true;
-                if (!keepActivityAlways()) {
-                    activity = null;
-                }
             }
         });
     }
@@ -254,36 +158,6 @@ public abstract class BasePresenter<VIEW> {
                 task.run();
                 iterator.remove();
             }
-        }
-    }
-
-    /**
-     * 代理视图对象的方法调用处理器
-     */
-    private class ProxyViewHandler implements InvocationHandler {
-        final WeakReference<VIEW> target;
-
-        ProxyViewHandler(VIEW target) {
-            this.target = new WeakReference<>(target);
-        }
-
-        private boolean isViewExists() {
-            return target.get() != null;
-        }
-
-        private VIEW getView() {
-            return target.get();
-        }
-
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            if (isViewValid()) {
-                VIEW targetView = target.get();
-                if (targetView != null) {
-                    return method.invoke(targetView, args);
-                }
-            }
-            return null;
         }
     }
 }

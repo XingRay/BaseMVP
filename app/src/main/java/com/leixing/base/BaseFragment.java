@@ -1,26 +1,34 @@
-package com.leixing.basemvp;
+package com.leixing.base;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+import com.leixing.basemvp.LifeCycleObserver;
+import com.leixing.basemvp.LifeCycleProvider;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Description : activity的基类.
- *
  * @author : leixing
- * @date : 2017-04-14
+ * @date : 2017-04-20
  * Email       : leixing1012@qq.com
  * Version     : 0.0.1
  * <p>
+ * Description : xxx
  */
 
-public abstract class BaseActivity extends FragmentActivity implements LifeCycleProvider {
+public abstract class BaseFragment extends Fragment implements LifeCycleProvider {
+
+    @SuppressWarnings("FieldCanBeLocal")
+    private View mRootView;
 
     protected Activity mActivity;
     protected Context mContext;
@@ -28,21 +36,17 @@ public abstract class BaseActivity extends FragmentActivity implements LifeCycle
     private List<LifeCycleObserver> mLifeCycleObservers;
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mActivity = this;
-        mContext = getApplicationContext();
 
-        if (!isParamsValid(getIntent())) {
-            finish();
-            return;
-        }
+        mActivity = getActivity();
+        mContext = getContext();
+
+        initVariables(getArguments());
+
         if (savedInstanceState != null) {
             restoreState(savedInstanceState);
         }
-        initVariables();
-        initView();
-        loadData();
 
         if (mLifeCycleObservers != null) {
             for (LifeCycleObserver observer : mLifeCycleObservers) {
@@ -51,9 +55,21 @@ public abstract class BaseActivity extends FragmentActivity implements LifeCycle
         }
     }
 
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mRootView = initView(inflater, container);
+        return mRootView;
+    }
 
     @Override
-    protected void onStart() {
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        loadData();
+    }
+
+    @Override
+    public void onStart() {
         super.onStart();
 
         if (mLifeCycleObservers != null) {
@@ -64,8 +80,9 @@ public abstract class BaseActivity extends FragmentActivity implements LifeCycle
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
+
         if (mLifeCycleObservers != null) {
             for (LifeCycleObserver observer : mLifeCycleObservers) {
                 observer.onResume();
@@ -74,8 +91,9 @@ public abstract class BaseActivity extends FragmentActivity implements LifeCycle
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
+
         if (mLifeCycleObservers != null) {
             for (LifeCycleObserver observer : mLifeCycleObservers) {
                 observer.onPause();
@@ -84,7 +102,7 @@ public abstract class BaseActivity extends FragmentActivity implements LifeCycle
     }
 
     @Override
-    protected void onStop() {
+    public void onStop() {
         super.onStop();
 
         if (mLifeCycleObservers != null) {
@@ -95,8 +113,9 @@ public abstract class BaseActivity extends FragmentActivity implements LifeCycle
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         super.onDestroy();
+
         if (mLifeCycleObservers != null) {
             for (LifeCycleObserver observer : mLifeCycleObservers) {
                 observer.onDestroy();
@@ -106,37 +125,33 @@ public abstract class BaseActivity extends FragmentActivity implements LifeCycle
     }
 
     /**
-     * 根据调用activity的intent所携带的参数，判断activity是否可以显示
+     * 初始化变量
      *
-     * @param intent 启动activity的参数
-     * @return activity是否可以显示
+     * @param arguments 外部传入的参数
      */
-    protected boolean isParamsValid(@SuppressWarnings("unused") Intent intent) {
-        return true;
-    }
+    protected abstract void initVariables(Bundle arguments);
 
     /**
      * 恢复保存的状态
      *
-     * @param state 保存的状态
+     * @param state 状态数据
      */
+    @SuppressWarnings("unused")
     protected void restoreState(Bundle state) {
+
     }
 
     /**
-     * 初始化变量， 如presenter，adapter，数据列表等
+     * 初始化视图
+     *
+     * @param inflater  inflater
+     * @param container container
+     * @return 加载的视图
      */
-    protected abstract void initVariables();
+    protected abstract View initView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container);
 
     /**
-     * 初始化控件，在这个方法中调用{@link android.app.Activity#setContentView(int)}设置布局， 绑定布局(通过
-     * {@link android.app.Activity#findViewById(int)}或者ButterKnife{@link <a href="https://github.com/JakeWharton/butterknife"/>})。
-     * 及设置监听器。
-     */
-    protected abstract void initView();
-
-    /**
-     * 载入数据，从服务器或者本地获取数据，然后展示在页面中。
+     * 加载数据
      */
     protected abstract void loadData();
 
