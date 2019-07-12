@@ -14,7 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author : leixing
  * @version : 1.0.0
- * mail : leixing@baidu.com
+ * mail : leixing1012@qq.com
  * @date : 2019/7/10 21:10
  */
 public class PresenterHolder<P> implements LifeCycleProvider, LifeCycleObserver, InvocationHandler, MvpView<P> {
